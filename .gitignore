@@ -5,6 +5,8 @@ Extension/.dep/*.o.d
 *.pdx
 *.dylib.dSYM
 *.dylib
+*.so
+*.dll
 *.bin
 *.elf
 *.hex

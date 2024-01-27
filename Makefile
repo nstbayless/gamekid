@@ -26,7 +26,9 @@ extension/gameview.c \
 
 GAMEBOY_SRC = \
 extension/emulator/gb/minigb_apu.c \
-extension/emulator/adapter_gb.c
+extension/emulator/gb/peanut_impl.c \
+extension/emulator/gb/peanut_cpu.c \
+extension/emulator/adapter_gb.c \
 
 SRC = $(MAIN_SRC) $(GAMEBOY_SRC)
 

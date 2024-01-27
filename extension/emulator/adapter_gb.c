@@ -6,11 +6,6 @@
 #include <stdio.h>
 #include <math.h>
 
-#define ENABLE_SOUND 1
-#define ENABLE_LCD 1
-#define PEANUT_GB_HIGH_LCD_ACCURACY 0
-
-#include "emulator/gb/minigb_apu.h"
 #include "emulator/gb/peanut_gb.h"
 
 typedef struct _GKGameBoyAdapter {
@@ -176,6 +171,7 @@ void GKGameBoyAdapterUpdate(GKGameBoyAdapter* adapter, unsigned int dt) {
 	update_joypad(adapter);
 	update_crank(adapter);
 	
+	gb_run_frame(&adapter->gb);
 	gb_run_frame(&adapter->gb);
 	
 	if(force_update) {
