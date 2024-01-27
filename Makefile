@@ -4,7 +4,13 @@ STACK_SIZE     = 61800
 PRODUCT = gamekid.pdx
 
 # Locate the SDK
-SDK = $(shell egrep '^\s*SDKRoot' ~/.Playdate/config | head -n 1 | cut -c9-)
+ifeq ($(PLAYDATE_SDK_PATH),)
+	SDK = $(shell egrep '^\s*SDKRoot' ~/.Playdate/config | head -n 1 | cut -c9-)
+else
+	SDK = $(PLAYDATE_SDK_PATH)
+endif
+
+$(info $(SDK))
 
 VPATH += extension
 VPATH += extension/lib
