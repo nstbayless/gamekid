@@ -1096,7 +1096,7 @@ uint8_t gb_colour_hash(struct gb_s *gb)
 void gb_reset(struct gb_s *gb)
 {
 	gb->gb_halt = 0;
-	gb->gb_ime = 1;
+	gb->cpu_reg.ime = 1;
 	gb->gb_bios_enable = 0;
 	gb->lcd_mode = LCD_HBLANK;
 
@@ -1107,7 +1107,7 @@ void gb_reset(struct gb_s *gb)
 	gb->cart_mode_select = 0;
 
 	/* Initialise CPU registers as though a DMG. */
-	gb->cpu_reg.af = 0x01B0;
+	jit_regfile_set_af(&gb->cpu_reg, 0x01B0);
 	gb->cpu_reg.bc = 0x0013;
 	gb->cpu_reg.de = 0x00D8;
 	gb->cpu_reg.hl = 0x014D;

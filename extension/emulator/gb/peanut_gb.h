@@ -43,6 +43,7 @@
 #include <stdint.h>	/* Required for int types */
 #include <string.h>	/* Required for memset */
 #include <time.h>	/* Required for tm struct */
+#include "jit_regfile.h"
 
 /**
  * Sound support must be provided by an external library. When audio_read() and
@@ -175,65 +176,6 @@
 #endif
 
 #define PEANUT_GB_ARRAYSIZE(array)    (sizeof(array)/sizeof(array[0]))
-
-struct cpu_registers_s
-{
-	/* Combine A and F registers. */
-	union
-	{
-		struct
-		{
-			/* Define specific bits of Flag register. */
-			union
-			{
-				struct
-				{
-					unsigned unused : 4;
-					unsigned c : 1; /* Carry flag. */
-					unsigned h : 1; /* Half carry flag. */
-					unsigned n : 1; /* Add/sub flag. */
-					unsigned z : 1; /* Zero flag. */
-				} f_bits;
-				uint8_t f;
-			};
-			uint8_t a;
-		};
-		uint16_t af;
-	};
-
-	union
-	{
-		struct
-		{
-			uint8_t c;
-			uint8_t b;
-		};
-		uint16_t bc;
-	};
-
-	union
-	{
-		struct
-		{
-			uint8_t e;
-			uint8_t d;
-		};
-		uint16_t de;
-	};
-
-	union
-	{
-		struct
-		{
-			uint8_t l;
-			uint8_t h;
-		};
-		uint16_t hl;
-	};
-
-	uint16_t sp; /* Stack pointer */
-	uint16_t pc; /* Program counter */
-};
 
 struct count_s
 {
@@ -390,7 +332,6 @@ struct gb_s
 	struct
 	{
 		unsigned gb_halt	: 1;
-		unsigned gb_ime		: 1;
 		unsigned gb_bios_enable : 1;
 		unsigned gb_frame	: 1; /* New frame drawn. */
 
@@ -431,7 +372,7 @@ struct gb_s
 		uint8_t cart_rtc[5];
 	};
 
-	struct cpu_registers_s cpu_reg;
+	struct jit_regfile_t cpu_reg;
 	struct gb_registers_s gb_reg;
 	struct count_s counter;
 
