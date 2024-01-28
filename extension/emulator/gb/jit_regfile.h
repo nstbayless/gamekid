@@ -9,7 +9,8 @@
 
 // note: assumes little-endian
 
-#define JIT_ZNH_BIT_N 5
+#define JIT_ZNH_BIT_N 0
+#define JIT_ZNH_BIT_H 4
 typedef struct jit_regfile_t
 {
     // we store as 32-bit instead of 16 for better alignment properties.
@@ -72,18 +73,7 @@ static inline bool jit_regfile_getn(uint32_t nh)
 
 static inline bool jit_regfile_geth(uint32_t nh)
 {
-    uint8_t c = (nh >> 8) & 0xff;
-    uint8_t b = (nh >> 16) & 0x0f;
-    uint8_t a = (nh >> 24) & 0x0f;
-    int n = jit_regfile_getn(nh);
-    if (!n)
-    {
-        return !!((a + b + c) & 0x10);
-    }
-    else
-    {
-        return !!((a - b - c) & 0x10);
-    }
+    return (nh >> JIT_ZNH_BIT_H) & 1;
 }
 
 // returns corrected value in lower 8 bits (r0)
@@ -129,19 +119,9 @@ static inline uint64_t jit_regfile_daa(const uint32_t nh, uint8_t v, bool c)
 }
 
 // can assign the result to the .nh field.
-static inline uint32_t jit_regfile_setnh_op(bool n, uint8_t a, uint8_t b, uint8_t c)
-{
-    return
-        (((uint32_t)n) << JIT_ZNH_BIT_N)
-        | (((uint32_t)c) << 8)
-        | (((uint32_t)b) << 16)
-        | (((uint32_t)a) << 24);
-}
-
-// can assign the result to the .nh field.
 static inline uint32_t jit_regfile_setnh(bool n, bool h)
 {
-    return (n << JIT_ZNH_BIT_N) | (h << 12);
+    return ((!!n) << JIT_ZNH_BIT_N) | ((!!h) << JIT_ZNH_BIT_H);
 }
 
 static inline uint8_t jit_regfile_get_f(uint32_t carry, uint32_t z, uint32_t nh)

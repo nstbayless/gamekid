@@ -193,11 +193,9 @@ static inline void __cpu_add8(struct gb_s *gb, int carry, uint8_t val)
 	uint8_t c = carry ? gb->cpu_reg.carry : 0;
 	uint16_t temp = gb->cpu_reg.a + val + c;
 	gb->cpu_reg.z = (temp & 0xFF);
-	gb->cpu_reg.nh = jit_regfile_setnh_op(
-		0, // n
-		gb->cpu_reg.a, // a
-		val, // b
-		c // c
+	gb->cpu_reg.nh = jit_regfile_setnh(
+		0,
+		(gb->cpu_reg.a ^ val ^ temp) & 0x10 ? 1 : 0
 	);
 	gb->cpu_reg.carry = temp >> 8;
 	gb->cpu_reg.a = (temp & 0xFF);
@@ -208,11 +206,9 @@ static inline uint8_t __cpu_cmp8(struct gb_s *gb, int carry, uint8_t val)
 	uint8_t c = carry ? gb->cpu_reg.carry : 0;
 	uint16_t temp = gb->cpu_reg.a - val - c;
 	gb->cpu_reg.z = (temp & 0xFF);
-	gb->cpu_reg.nh = jit_regfile_setnh_op(
-		1, // n
-		gb->cpu_reg.a, // a
-		val, // b
-		c // c
+	gb->cpu_reg.nh = jit_regfile_setnh(
+		1,
+		(gb->cpu_reg.a ^ val ^ temp) & 0x10 ? 1 : 0
 	);
 	gb->cpu_reg.carry = temp >> 8;
 	return temp;
@@ -321,25 +317,19 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x04: /* INC B */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			0, // n
-			gb->cpu_reg.b, // a
-			0, // b
-			1 // c
+		gb->cpu_reg.z = ++gb->cpu_reg.b;
+		jit_regfile_setnh(
+			0,
+			(gb->cpu_reg.b & 0xFF) == 0x00
 		);
-		gb->cpu_reg.b++;
-		gb->cpu_reg.z = gb->cpu_reg.b;
 		break;
 
 	case 0x05: /* DEC B */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			1, // n
-			gb->cpu_reg.b, // a
-			0, // b
-			0x01 // c
+		gb->cpu_reg.z = --gb->cpu_reg.b;
+		jit_regfile_setnh(
+			1,
+			((gb->cpu_reg.b & 0x0F) == 0x0F)
 		);
-		gb->cpu_reg.b--;
-		gb->cpu_reg.z = gb->cpu_reg.b;
 		break;
 
 	case 0x06: /* LD B, imm */
@@ -384,25 +374,19 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x0C: /* INC C */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			0, // n
-			gb->cpu_reg.a, // a
-			0, // b
-			1 // c
+		gb->cpu_reg.z = ++gb->cpu_reg.c;
+		jit_regfile_setnh(
+			0,
+			(gb->cpu_reg.c & 0xFF) == 0x00
 		);
-		gb->cpu_reg.c++;
-		gb->cpu_reg.z = gb->cpu_reg.c;
 		break;
 
 	case 0x0D: /* DEC C */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			1, // n
-			gb->cpu_reg.c, // a
-			0, // b
-			0x01 // c
+		gb->cpu_reg.z = --gb->cpu_reg.c;
+		jit_regfile_setnh(
+			1,
+			((gb->cpu_reg.c & 0x0F) == 0x0F)
 		);
-		gb->cpu_reg.c--;
-		gb->cpu_reg.z = gb->cpu_reg.c;
 		break;
 
 	case 0x0E: /* LD C, imm */
@@ -434,24 +418,18 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x14: /* INC D */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			0, // n
-			gb->cpu_reg.d, // a
-			0, // b
-			1 // c
+		gb->cpu_reg.z = ++gb->cpu_reg.d;
+		jit_regfile_setnh(
+			0,
+			(gb->cpu_reg.d & 0xFF) == 0x00
 		);
-		gb->cpu_reg.d++;
-		gb->cpu_reg.z = gb->cpu_reg.d;
 		break;
 
 	case 0x15: /* DEC D */
-		gb->cpu_reg.d--;
-		gb->cpu_reg.z = gb->cpu_reg.d;
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			1, // n
-			gb->cpu_reg.d, // a
-			0, // b
-			0x01 // c
+		gb->cpu_reg.z = --gb->cpu_reg.d;
+		jit_regfile_setnh(
+			1,
+			((gb->cpu_reg.d & 0x0F) == 0x0F)
 		);
 		break;
 
@@ -497,23 +475,19 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x1C: /* INC E */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			0, // n
-			gb->cpu_reg.e, // a
-			0, // b
-			1 // c
-		);
 		gb->cpu_reg.z = ++gb->cpu_reg.e;
+		jit_regfile_setnh(
+			0,
+			(gb->cpu_reg.e & 0xFF) == 0x00
+		);
 		break;
 
 	case 0x1D: /* DEC E */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			1, // n
-			gb->cpu_reg.e, // a
-			0, // b
-			0x01 // c
-		);
 		gb->cpu_reg.z = --gb->cpu_reg.e;
+		jit_regfile_setnh(
+			1,
+			((gb->cpu_reg.e & 0x0F) == 0x0F)
+		);
 		break;
 
 	case 0x1E: /* LD E, imm */
@@ -557,25 +531,19 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x24: /* INC H */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			0, // n
-			gb->cpu_reg.h, // a
-			0, // b
-			1 // c
+		gb->cpu_reg.z = ++gb->cpu_reg.h;
+		jit_regfile_setnh(
+			0,
+			(gb->cpu_reg.h & 0xFF) == 0x00
 		);
-		gb->cpu_reg.h++;
-		gb->cpu_reg.z = gb->cpu_reg.h;
 		break;
 
 	case 0x25: /* DEC H */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			1, // n
-			gb->cpu_reg.h, // a
-			0, // b
-			0x01 // c
+		gb->cpu_reg.z = --gb->cpu_reg.h;
+		jit_regfile_setnh(
+			1,
+			((gb->cpu_reg.h & 0x0F) == 0x0F)
 		);
-		gb->cpu_reg.h--;
-		gb->cpu_reg.z = gb->cpu_reg.h;
 		break;
 
 	case 0x26: /* LD H, imm */
@@ -626,25 +594,19 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x2C: /* INC L */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			0, // n
-			gb->cpu_reg.l, // a
-			0, // b
-			1 // c
+		gb->cpu_reg.z = ++gb->cpu_reg.l;
+		jit_regfile_setnh(
+			0,
+			(gb->cpu_reg.l & 0xFF) == 0x00
 		);
-		gb->cpu_reg.l++;
-		gb->cpu_reg.z = gb->cpu_reg.l;
 		break;
 
 	case 0x2D: /* DEC L */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			1, // n
-			gb->cpu_reg.l, // a
-			0, // b
-			0x01 // c
+		gb->cpu_reg.z = --gb->cpu_reg.l;
+		jit_regfile_setnh(
+			1,
+			((gb->cpu_reg.l & 0x0F) == 0x0F)
 		);
-		gb->cpu_reg.l--;
-		gb->cpu_reg.z = gb->cpu_reg.l;
 		break;
 
 	case 0x2E: /* LD L, imm */
@@ -685,13 +647,11 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 	case 0x34: /* INC (HL) */
 	{
 		uint8_t temp = __gb_read(gb, gb->cpu_reg.hl);
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			0, // n
-			temp, // a
-			0, // b
-			0x01 // c
+		gb->cpu_reg.z = ++temp;
+		jit_regfile_setnh(
+			0,
+			(temp & 0xFF) == 0x00
 		);
-		gb->cpu_reg.z = (uint8_t)(temp + 1);
 		__gb_write(gb, gb->cpu_reg.hl, temp + 1);
 		break;
 	}
@@ -699,14 +659,11 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 	case 0x35: /* DEC (HL) */
 	{
 		uint8_t temp = __gb_read(gb, gb->cpu_reg.hl);
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			1, // n
-			temp, // a
-			0, // b
-			0x01 // c
+		gb->cpu_reg.z = --temp;
+		jit_regfile_setnh(
+			1,
+			((temp & 0x0F) == 0x0F)
 		);
-		--temp;
-		gb->cpu_reg.z = temp;
 		__gb_write(gb, gb->cpu_reg.hl, temp);
 		break;
 	}
@@ -753,25 +710,19 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x3C: /* INC A */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			0, // n
-			gb->cpu_reg.a, // a
-			0, // b
-			1 // c
+		gb->cpu_reg.z = ++gb->cpu_reg.a;
+		jit_regfile_setnh(
+			0,
+			(gb->cpu_reg.a & 0xFF) == 0x00
 		);
-		gb->cpu_reg.a++;
-		gb->cpu_reg.z = gb->cpu_reg.a;
 		break;
 
 	case 0x3D: /* DEC A */
-		gb->cpu_reg.nh = jit_regfile_setnh_op(
-			1, // n
-			gb->cpu_reg.a, // a
-			0, // b
-			0x01 // c
+		gb->cpu_reg.z = --gb->cpu_reg.a;
+		jit_regfile_setnh(
+			1,
+			((gb->cpu_reg.a & 0x0F) == 0x0F)
 		);
-		gb->cpu_reg.a--;
-		gb->cpu_reg.z = gb->cpu_reg.a;
 		break;
 
 	case 0x3E: /* LD A, imm */
