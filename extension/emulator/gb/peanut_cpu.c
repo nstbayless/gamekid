@@ -93,27 +93,27 @@ static uint8_t __gb_execute_cb(struct cpu_registers_s *regs)
 	switch(r)
 	{
 	case 0:
-		val = regs->b;
+		val = GET_REG_B();
 		break;
 
 	case 1:
-		val = regs->c;
+		val = GET_REG_C();
 		break;
 
 	case 2:
-		val = regs->d;
+		val = GET_REG_D();
 		break;
 
 	case 3:
-		val = regs->e;
+		val = GET_REG_E();
 		break;
 
 	case 4:
-		val = regs->h;
+		val = GET_REG_H();
 		break;
 
 	case 5:
-		val = regs->l;
+		val = GET_REG_L();
 		break;
 
 	case 6:
@@ -226,27 +226,27 @@ static uint8_t __gb_execute_cb(struct cpu_registers_s *regs)
 		switch(r)
 		{
 		case 0:
-			regs->b = val;
+			SET_REG_B(val)
 			break;
 
 		case 1:
-			regs->c = val;
+			SET_REG_C(val)
 			break;
 
 		case 2:
-			regs->d = val;
+			SET_REG_D(val)
 			break;
 
 		case 3:
-			regs->e = val;
+			SET_REG_E(val)
 			break;
 
 		case 4:
-			regs->h = val;
+			SET_REG_H(val)
 			break;
 
 		case 5:
-			regs->l = val;
+			SET_REG_L(val)
 			break;
 
 		case 6:
@@ -302,8 +302,8 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x01: /* LD BC, imm */
-		regs->c = __gb_cpu_read(regs->pc++);
-		regs->b = __gb_cpu_read(regs->pc++);
+		SET_REG_C(__gb_cpu_read(regs->pc++))
+		SET_REG_B(__gb_cpu_read(regs->pc++))
 		break;
 
 	case 0x02: /* LD (BC), A */
@@ -315,21 +315,21 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x04: /* INC B */
-		regs->b++;
-		SET_REGF_Z((regs->b == 0x00))
+		SET_REG_B(GET_REG_B()+1);
+		SET_REGF_Z((GET_REG_B() == 0x00))
 		SET_REGF_N(0)
-		SET_REGF_H(((regs->b & 0x0F) == 0x00))
+		SET_REGF_H(((GET_REG_B() & 0x0F) == 0x00))
 		break;
 
 	case 0x05: /* DEC B */
-		regs->b--;
-		SET_REGF_Z((regs->b == 0x00))
+		SET_REG_B(GET_REG_B()-1);
+		SET_REGF_Z((GET_REG_B() == 0x00))
 		SET_REGF_N(1)
-		SET_REGF_H(((regs->b & 0x0F) == 0x0F))
+		SET_REGF_H(((GET_REG_B() & 0x0F) == 0x0F))
 		break;
 
 	case 0x06: /* LD B, imm */
-		regs->b = __gb_cpu_read(regs->pc++);
+		SET_REG_B(__gb_cpu_read(regs->pc++))
 		break;
 
 	case 0x07: /* RLCA */
@@ -364,21 +364,21 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x0C: /* INC C */
-		regs->c++;
-		SET_REGF_Z((regs->c == 0x00))
+		SET_REG_C(GET_REG_C()+1);
+		SET_REGF_Z((GET_REG_C() == 0x00))
 		SET_REGF_N(0)
-		SET_REGF_H(((regs->c & 0x0F) == 0x00))
+		SET_REGF_H(((GET_REG_C() & 0x0F) == 0x00))
 		break;
 
 	case 0x0D: /* DEC C */
-		regs->c--;
-		SET_REGF_Z((regs->c == 0x00))
+		SET_REG_C(GET_REG_C()-1);
+		SET_REGF_Z((GET_REG_C() == 0x00))
 		SET_REGF_N(1)
-		SET_REGF_H(((regs->c & 0x0F) == 0x0F))
+		SET_REGF_H(((GET_REG_C() & 0x0F) == 0x0F))
 		break;
 
 	case 0x0E: /* LD C, imm */
-		regs->c = __gb_cpu_read(regs->pc++);
+		SET_REG_C(__gb_cpu_read(regs->pc++))
 		break;
 
 	case 0x0F: /* RRCA */
@@ -394,8 +394,8 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x11: /* LD DE, imm */
-		regs->e = __gb_cpu_read(regs->pc++);
-		regs->d = __gb_cpu_read(regs->pc++);
+		SET_REG_E(__gb_cpu_read(regs->pc++))
+		SET_REG_D(__gb_cpu_read(regs->pc++))
 		break;
 
 	case 0x12: /* LD (DE), A */
@@ -407,21 +407,21 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x14: /* INC D */
-		regs->d++;
-		SET_REGF_Z((regs->d == 0x00))
+		SET_REG_D(GET_REG_D()+1);
+		SET_REGF_Z((GET_REG_D() == 0x00))
 		SET_REGF_N(0)
-		SET_REGF_H(((regs->d & 0x0F) == 0x00))
+		SET_REGF_H(((GET_REG_D() & 0x0F) == 0x00))
 		break;
 
 	case 0x15: /* DEC D */
-		regs->d--;
-		SET_REGF_Z((regs->d == 0x00))
+		SET_REG_D(GET_REG_D()-1);
+		SET_REGF_Z((GET_REG_D() == 0x00))
 		SET_REGF_N(1)
-		SET_REGF_H(((regs->d & 0x0F) == 0x0F))
+		SET_REGF_H(((GET_REG_D() & 0x0F) == 0x0F))
 		break;
 
 	case 0x16: /* LD D, imm */
-		regs->d = __gb_cpu_read(regs->pc++);
+		SET_REG_D(__gb_cpu_read(regs->pc++))
 		break;
 
 	case 0x17: /* RLA */
@@ -457,21 +457,21 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x1C: /* INC E */
-		regs->e++;
-		SET_REGF_Z((regs->e == 0x00))
+		GET_REG_E()++;
+		SET_REGF_Z((GET_REG_E() == 0x00))
 		SET_REGF_N(0)
-		SET_REGF_H(((regs->e & 0x0F) == 0x00))
+		SET_REGF_H(((GET_REG_E() & 0x0F) == 0x00))
 		break;
 
 	case 0x1D: /* DEC E */
-		regs->e--;
-		SET_REGF_Z((regs->e == 0x00))
+		SET_REG_E(GET_REG_E()-1);
+		SET_REGF_Z((GET_REG_E() == 0x00))
 		SET_REGF_N(1)
-		SET_REGF_H(((regs->e & 0x0F) == 0x0F))
+		SET_REGF_H(((GET_REG_E() & 0x0F) == 0x0F))
 		break;
 
 	case 0x1E: /* LD E, imm */
-		regs->e = __gb_cpu_read(regs->pc++);
+		SET_REG_E(__gb_cpu_read(regs->pc++))
 		break;
 
 	case 0x1F: /* RRA */
@@ -498,8 +498,8 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x21: /* LD HL, imm */
-		regs->l = __gb_cpu_read(regs->pc++);
-		regs->h = __gb_cpu_read(regs->pc++);
+		SET_REG_L(__gb_cpu_read(regs->pc++))
+		SET_REG_H(__gb_cpu_read(regs->pc++))
 		break;
 
 	case 0x22: /* LDI (HL), A */
@@ -512,21 +512,21 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x24: /* INC H */
-		regs->h++;
-		SET_REGF_Z((regs->h == 0x00))
+		SET_REG_H(GET_REG_H()+1);
+		SET_REGF_Z((GET_REG_H() == 0x00))
 		SET_REGF_N(0)
-		SET_REGF_H(((regs->h & 0x0F) == 0x00))
+		SET_REGF_H(((GET_REG_H() & 0x0F) == 0x00))
 		break;
 
 	case 0x25: /* DEC H */
-		regs->h--;
-		SET_REGF_Z((regs->h == 0x00))
+		SET_REG_H(GET_REG_H()-1);
+		SET_REGF_Z((GET_REG_H() == 0x00))
 		SET_REGF_N(1)
-		SET_REGF_H(((regs->h & 0x0F) == 0x0F))
+		SET_REGF_H(((GET_REG_H() & 0x0F) == 0x0F))
 		break;
 
 	case 0x26: /* LD H, imm */
-		regs->h = __gb_cpu_read(regs->pc++);
+		SET_REG_H(__gb_cpu_read(regs->pc++))
 		break;
 
 	case 0x27: /* DAA */
@@ -588,21 +588,21 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x2C: /* INC L */
-		regs->l++;
-		SET_REGF_Z((regs->l == 0x00))
+		SET_REG_L(GET_REG_L()+1);
+		SET_REGF_Z((GET_REG_L() == 0x00))
 		SET_REGF_N(0)
-		SET_REGF_H(((regs->l & 0x0F) == 0x00))
+		SET_REGF_H(((GET_REG_L() & 0x0F) == 0x00))
 		break;
 
 	case 0x2D: /* DEC L */
-		regs->l--;
-		SET_REGF_Z((regs->l == 0x00))
+		SET_REG_L(GET_REG_L()-1);
+		SET_REGF_Z((GET_REG_L() == 0x00))
 		SET_REGF_N(1)
-		SET_REGF_H(((regs->l & 0x0F) == 0x0F))
+		SET_REGF_H(((GET_REG_L() & 0x0F) == 0x0F))
 		break;
 
 	case 0x2E: /* LD L, imm */
-		regs->l = __gb_cpu_read(regs->pc++);
+		SET_REG_L(__gb_cpu_read(regs->pc++))
 		break;
 
 	case 0x2F: /* CPL */
@@ -721,210 +721,210 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x41: /* LD B, C */
-		regs->b = regs->c;
+		SET_REG_B(GET_REG_C())
 		break;
 
 	case 0x42: /* LD B, D */
-		regs->b = regs->d;
+		SET_REG_B(GET_REG_D())
 		break;
 
 	case 0x43: /* LD B, E */
-		regs->b = regs->e;
+		SET_REG_B(GET_REG_E())
 		break;
 
 	case 0x44: /* LD B, H */
-		regs->b = regs->h;
+		SET_REG_B(GET_REG_H())
 		break;
 
 	case 0x45: /* LD B, L */
-		regs->b = regs->l;
+		SET_REG_B(GET_REG_L())
 		break;
 
 	case 0x46: /* LD B, (HL) */
-		regs->b = __gb_cpu_read(regs->hl);
+		SET_REG_B(__gb_cpu_read(regs->hl))
 		break;
 
 	case 0x47: /* LD B, A */
-		regs->b = regs->a;
+		SET_REG_B(regs->a)
 		break;
 
 	case 0x48: /* LD C, B */
-		regs->c = regs->b;
+		SET_REG_C(GET_REG_B())
 		break;
 
 	case 0x49: /* LD C, C */
 		break;
 
 	case 0x4A: /* LD C, D */
-		regs->c = regs->d;
+		SET_REG_C(GET_REG_D())
 		break;
 
 	case 0x4B: /* LD C, E */
-		regs->c = regs->e;
+		SET_REG_C(GET_REG_E())
 		break;
 
 	case 0x4C: /* LD C, H */
-		regs->c = regs->h;
+		SET_REG_C(GET_REG_H())
 		break;
 
 	case 0x4D: /* LD C, L */
-		regs->c = regs->l;
+		SET_REG_C(GET_REG_L())
 		break;
 
 	case 0x4E: /* LD C, (HL) */
-		regs->c = __gb_cpu_read(regs->hl);
+		SET_REG_C(__gb_cpu_read(regs->hl))
 		break;
 
 	case 0x4F: /* LD C, A */
-		regs->c = regs->a;
+		SET_REG_C(regs->a)
 		break;
 
 	case 0x50: /* LD D, B */
-		regs->d = regs->b;
+		SET_REG_D(GET_REG_B())
 		break;
 
 	case 0x51: /* LD D, C */
-		regs->d = regs->c;
+		SET_REG_D(GET_REG_C())
 		break;
 
 	case 0x52: /* LD D, D */
 		break;
 
 	case 0x53: /* LD D, E */
-		regs->d = regs->e;
+		SET_REG_D(GET_REG_E())
 		break;
 
 	case 0x54: /* LD D, H */
-		regs->d = regs->h;
+		SET_REG_D(GET_REG_H())
 		break;
 
 	case 0x55: /* LD D, L */
-		regs->d = regs->l;
+		SET_REG_D(GET_REG_L())
 		break;
 
 	case 0x56: /* LD D, (HL) */
-		regs->d = __gb_cpu_read(regs->hl);
+		SET_REG_D(__gb_cpu_read(regs->hl))
 		break;
 
 	case 0x57: /* LD D, A */
-		regs->d = regs->a;
+		SET_REG_D(regs->a)
 		break;
 
 	case 0x58: /* LD E, B */
-		regs->e = regs->b;
+		SET_REG_E(GET_REG_B())
 		break;
 
 	case 0x59: /* LD E, C */
-		regs->e = regs->c;
+		SET_REG_E(GET_REG_C())
 		break;
 
 	case 0x5A: /* LD E, D */
-		regs->e = regs->d;
+		SET_REG_E(GET_REG_D())
 		break;
 
 	case 0x5B: /* LD E, E */
 		break;
 
 	case 0x5C: /* LD E, H */
-		regs->e = regs->h;
+		SET_REG_E(GET_REG_H())
 		break;
 
 	case 0x5D: /* LD E, L */
-		regs->e = regs->l;
+		SET_REG_E(GET_REG_L())
 		break;
 
 	case 0x5E: /* LD E, (HL) */
-		regs->e = __gb_cpu_read(regs->hl);
+		SET_REG_E(__gb_cpu_read(regs->hl))
 		break;
 
 	case 0x5F: /* LD E, A */
-		regs->e = regs->a;
+		SET_REG_E(regs->a)
 		break;
 
 	case 0x60: /* LD H, B */
-		regs->h = regs->b;
+		SET_REG_H(GET_REG_B())
 		break;
 
 	case 0x61: /* LD H, C */
-		regs->h = regs->c;
+		SET_REG_H(GET_REG_C())
 		break;
 
 	case 0x62: /* LD H, D */
-		regs->h = regs->d;
+		SET_REG_H(GET_REG_D())
 		break;
 
 	case 0x63: /* LD H, E */
-		regs->h = regs->e;
+		SET_REG_H(GET_REG_E())
 		break;
 
 	case 0x64: /* LD H, H */
 		break;
 
 	case 0x65: /* LD H, L */
-		regs->h = regs->l;
+		SET_REG_H(GET_REG_L())
 		break;
 
 	case 0x66: /* LD H, (HL) */
-		regs->h = __gb_cpu_read(regs->hl);
+		SET_REG_H(__gb_cpu_read(regs->hl))
 		break;
 
 	case 0x67: /* LD H, A */
-		regs->h = regs->a;
+		SET_REG_H(regs->a)
 		break;
 
 	case 0x68: /* LD L, B */
-		regs->l = regs->b;
+		SET_REG_L(GET_REG_B())
 		break;
 
 	case 0x69: /* LD L, C */
-		regs->l = regs->c;
+		SET_REG_L(GET_REG_C())
 		break;
 
 	case 0x6A: /* LD L, D */
-		regs->l = regs->d;
+		SET_REG_L(GET_REG_D())
 		break;
 
 	case 0x6B: /* LD L, E */
-		regs->l = regs->e;
+		SET_REG_L(GET_REG_E())
 		break;
 
 	case 0x6C: /* LD L, H */
-		regs->l = regs->h;
+		SET_REG_L(GET_REG_H())
 		break;
 
 	case 0x6D: /* LD L, L */
 		break;
 
 	case 0x6E: /* LD L, (HL) */
-		regs->l = __gb_cpu_read(regs->hl);
+		SET_REG_L(__gb_cpu_read(regs->hl))
 		break;
 
 	case 0x6F: /* LD L, A */
-		regs->l = regs->a;
+		SET_REG_L(regs->a)
 		break;
 
 	case 0x70: /* LD (HL), B */
-		__gb_cpu_write(regs->hl, regs->b);
+		__gb_cpu_write(regs->hl, GET_REG_B());
 		break;
 
 	case 0x71: /* LD (HL), C */
-		__gb_cpu_write(regs->hl, regs->c);
+		__gb_cpu_write(regs->hl, GET_REG_C());
 		break;
 
 	case 0x72: /* LD (HL), D */
-		__gb_cpu_write(regs->hl, regs->d);
+		__gb_cpu_write(regs->hl, GET_REG_D());
 		break;
 
 	case 0x73: /* LD (HL), E */
-		__gb_cpu_write(regs->hl, regs->e);
+		__gb_cpu_write(regs->hl, GET_REG_E());
 		break;
 
 	case 0x74: /* LD (HL), H */
-		__gb_cpu_write(regs->hl, regs->h);
+		__gb_cpu_write(regs->hl, GET_REG_H());
 		break;
 
 	case 0x75: /* LD (HL), L */
-		__gb_cpu_write(regs->hl, regs->l);
+		__gb_cpu_write(regs->hl, GET_REG_L());
 		break;
 
 	case 0x76: /* HALT */
@@ -937,27 +937,27 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x78: /* LD A, B */
-		regs->a = regs->b;
+		regs->a = GET_REG_B();
 		break;
 
 	case 0x79: /* LD A, C */
-		regs->a = regs->c;
+		regs->a = GET_REG_C();
 		break;
 
 	case 0x7A: /* LD A, D */
-		regs->a = regs->d;
+		regs->a = GET_REG_D();
 		break;
 
 	case 0x7B: /* LD A, E */
-		regs->a = regs->e;
+		regs->a = GET_REG_E();
 		break;
 
 	case 0x7C: /* LD A, H */
-		regs->a = regs->h;
+		regs->a = GET_REG_H();
 		break;
 
 	case 0x7D: /* LD A, L */
-		regs->a = regs->l;
+		regs->a = GET_REG_L();
 		break;
 
 	case 0x7E: /* LD A, (HL) */
@@ -969,37 +969,37 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 
 	case 0x80: /* ADD A, B */
 	{
-		__gb_add8(regs, 0, regs->b);
+		__gb_add8(regs, 0, GET_REG_B());
 		break;
 	}
 
 	case 0x81: /* ADD A, C */
 	{
-		__gb_add8(regs, 0, regs->c);
+		__gb_add8(regs, 0, GET_REG_C());
 		break;
 	}
 
 	case 0x82: /* ADD A, D */
 	{
-		__gb_add8(regs, 0, regs->d);
+		__gb_add8(regs, 0, GET_REG_D());
 		break;
 	}
 
 	case 0x83: /* ADD A, E */
 	{
-		__gb_add8(regs, 0, regs->e);
+		__gb_add8(regs, 0, GET_REG_E());
 		break;
 	}
 
 	case 0x84: /* ADD A, H */
 	{
-		__gb_add8(regs, 0, regs->h);
+		__gb_add8(regs, 0, GET_REG_H());
 		break;
 	}
 
 	case 0x85: /* ADD A, L */
 	{
-		__gb_add8(regs, 0, regs->l);
+		__gb_add8(regs, 0, GET_REG_L());
 		break;
 	}
 
@@ -1019,37 +1019,37 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 
 	case 0x88: /* ADC A, B */
 	{
-		__gb_add8(regs, 1, regs->b);
+		__gb_add8(regs, 1, GET_REG_B());
 		break;
 	}
 
 	case 0x89: /* ADC A, C */
 	{
-		__gb_add8(regs, 1, regs->c);
+		__gb_add8(regs, 1, GET_REG_C());
 		break;
 	}
 
 	case 0x8A: /* ADC A, D */
 	{
-		__gb_add8(regs, 1, regs->d);
+		__gb_add8(regs, 1, GET_REG_D());
 		break;
 	}
 
 	case 0x8B: /* ADC A, E */
 	{
-		__gb_add8(regs, 1, regs->e);
+		__gb_add8(regs, 1, GET_REG_E());
 		break;
 	}
 
 	case 0x8C: /* ADC A, H */
 	{
-		__gb_add8(regs, 1, regs->h);
+		__gb_add8(regs, 1, GET_REG_H());
 		break;
 	}
 
 	case 0x8D: /* ADC A, L */
 	{
-		__gb_add8(regs, 1, regs->l);
+		__gb_add8(regs, 1, GET_REG_L());
 		break;
 	}
 
@@ -1069,37 +1069,37 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 
 	case 0x90: /* SUB B */
 	{
-		__gb_sub8(regs, 0, regs->b);
+		__gb_sub8(regs, 0, GET_REG_B());
 		break;
 	}
 
 	case 0x91: /* SUB C */
 	{
-		__gb_sub8(regs, 0, regs->c);
+		__gb_sub8(regs, 0, GET_REG_C());
 		break;
 	}
 
 	case 0x92: /* SUB D */
 	{
-		__gb_sub8(regs, 0, regs->d);
+		__gb_sub8(regs, 0, GET_REG_D());
 		break;
 	}
 
 	case 0x93: /* SUB E */
 	{
-		__gb_sub8(regs, 0, regs->e);
+		__gb_sub8(regs, 0, GET_REG_E());
 		break;
 	}
 
 	case 0x94: /* SUB H */
 	{
-		__gb_sub8(regs, 0, regs->h);
+		__gb_sub8(regs, 0, GET_REG_H());
 		break;
 	}
 
 	case 0x95: /* SUB L */
 	{
-		__gb_sub8(regs, 0, regs->l);
+		__gb_sub8(regs, 0, GET_REG_L());
 		break;
 	}
 
@@ -1120,37 +1120,37 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 
 	case 0x98: /* SBC A, B */
 	{
-		__gb_sub8(regs, 1, regs->b);
+		__gb_sub8(regs, 1, GET_REG_B());
 		break;
 	}
 
 	case 0x99: /* SBC A, C */
 	{
-		__gb_sub8(regs, 1, regs->c);
+		__gb_sub8(regs, 1, GET_REG_C());
 		break;
 	}
 
 	case 0x9A: /* SBC A, D */
 	{
-		__gb_sub8(regs, 1, regs->d);
+		__gb_sub8(regs, 1, GET_REG_D());
 		break;
 	}
 
 	case 0x9B: /* SBC A, E */
 	{
-		__gb_sub8(regs, 1, regs->e);
+		__gb_sub8(regs, 1, GET_REG_E());
 		break;
 	}
 
 	case 0x9C: /* SBC A, H */
 	{
-		__gb_sub8(regs, 1, regs->h);
+		__gb_sub8(regs, 1, GET_REG_H());
 		break;
 	}
 
 	case 0x9D: /* SBC A, L */
 	{
-		__gb_sub8(regs, 1, regs->l);
+		__gb_sub8(regs, 1, GET_REG_L());
 		break;
 	}
 
@@ -1169,7 +1169,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xA0: /* AND B */
-		regs->a = regs->a & regs->b;
+		regs->a = regs->a & GET_REG_B();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(1)
@@ -1177,7 +1177,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xA1: /* AND C */
-		regs->a = regs->a & regs->c;
+		regs->a = regs->a & GET_REG_C();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(1)
@@ -1185,7 +1185,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xA2: /* AND D */
-		regs->a = regs->a & regs->d;
+		regs->a = regs->a & GET_REG_D();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(1)
@@ -1193,7 +1193,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xA3: /* AND E */
-		regs->a = regs->a & regs->e;
+		regs->a = regs->a & GET_REG_E();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(1)
@@ -1201,7 +1201,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xA4: /* AND H */
-		regs->a = regs->a & regs->h;
+		regs->a = regs->a & GET_REG_H();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(1)
@@ -1209,7 +1209,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xA5: /* AND L */
-		regs->a = regs->a & regs->l;
+		regs->a = regs->a & GET_REG_L();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(1)
@@ -1232,7 +1232,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xA8: /* XOR B */
-		regs->a = regs->a ^ regs->b;
+		regs->a = regs->a ^ GET_REG_B();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1240,7 +1240,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xA9: /* XOR C */
-		regs->a = regs->a ^ regs->c;
+		regs->a = regs->a ^ GET_REG_C();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1248,7 +1248,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xAA: /* XOR D */
-		regs->a = regs->a ^ regs->d;
+		regs->a = regs->a ^ GET_REG_D();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1256,7 +1256,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xAB: /* XOR E */
-		regs->a = regs->a ^ regs->e;
+		regs->a = regs->a ^ GET_REG_E();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1264,7 +1264,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xAC: /* XOR H */
-		regs->a = regs->a ^ regs->h;
+		regs->a = regs->a ^ GET_REG_H();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1272,7 +1272,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xAD: /* XOR L */
-		regs->a = regs->a ^ regs->l;
+		regs->a = regs->a ^ GET_REG_L();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1296,7 +1296,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xB0: /* OR B */
-		regs->a = regs->a | regs->b;
+		regs->a = regs->a | GET_REG_B();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1304,7 +1304,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xB1: /* OR C */
-		regs->a = regs->a | regs->c;
+		regs->a = regs->a | GET_REG_C();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1312,7 +1312,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xB2: /* OR D */
-		regs->a = regs->a | regs->d;
+		regs->a = regs->a | GET_REG_D();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1320,7 +1320,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xB3: /* OR E */
-		regs->a = regs->a | regs->e;
+		regs->a = regs->a | GET_REG_E();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1328,7 +1328,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xB4: /* OR H */
-		regs->a = regs->a | regs->h;
+		regs->a = regs->a | GET_REG_H();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1336,7 +1336,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xB5: /* OR L */
-		regs->a = regs->a | regs->l;
+		regs->a = regs->a | GET_REG_L();
 		SET_REGF_Z((regs->a == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1360,37 +1360,37 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 
 	case 0xB8: /* CP B */
 	{
-		__gb_cmp8(regs, 0, regs->b);
+		__gb_cmp8(regs, 0, GET_REG_B());
 		break;
 	}
 
 	case 0xB9: /* CP C */
 	{
-		__gb_cmp8(regs, 0, regs->c);
+		__gb_cmp8(regs, 0, GET_REG_C());
 		break;
 	}
 
 	case 0xBA: /* CP D */
 	{
-		__gb_cmp8(regs, 0, regs->d);
+		__gb_cmp8(regs, 0, GET_REG_D());
 		break;
 	}
 
 	case 0xBB: /* CP E */
 	{
-		__gb_cmp8(regs, 0, regs->e);
+		__gb_cmp8(regs, 0, GET_REG_E());
 		break;
 	}
 
 	case 0xBC: /* CP H */
 	{
-		__gb_cmp8(regs, 0, regs->h);
+		__gb_cmp8(regs, 0, GET_REG_H());
 		break;
 	}
 
 	case 0xBD: /* CP L */
 	{
-		__gb_cmp8(regs, 0, regs->l);
+		__gb_cmp8(regs, 0, GET_REG_L());
 		break;
 	}
 
@@ -1420,8 +1420,8 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xC1: /* POP BC */
-		regs->c = __gb_cpu_read(regs->sp++);
-		regs->b = __gb_cpu_read(regs->sp++);
+		SET_REG_C(__gb_cpu_read(regs->sp++))
+		SET_REG_B(__gb_cpu_read(regs->sp++))
 		break;
 
 	case 0xC2: /* JP NZ, imm */
@@ -1461,8 +1461,8 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xC5: /* PUSH BC */
-		__gb_cpu_write(--regs->sp, regs->b);
-		__gb_cpu_write(--regs->sp, regs->c);
+		__gb_cpu_write(--regs->sp, GET_REG_B());
+		__gb_cpu_write(--regs->sp, GET_REG_C());
 		break;
 
 	case 0xC6: /* ADD A, imm */
@@ -1564,8 +1564,8 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xD1: /* POP DE */
-		regs->e = __gb_cpu_read(regs->sp++);
-		regs->d = __gb_cpu_read(regs->sp++);
+		SET_REG_E(__gb_cpu_read(regs->sp++))
+		SET_REG_D(__gb_cpu_read(regs->sp++))
 		break;
 
 	case 0xD2: /* JP NC, imm */
@@ -1597,8 +1597,8 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xD5: /* PUSH DE */
-		__gb_cpu_write(--regs->sp, regs->d);
-		__gb_cpu_write(--regs->sp, regs->e);
+		__gb_cpu_write(--regs->sp, GET_REG_D());
+		__gb_cpu_write(--regs->sp, GET_REG_E());
 		break;
 
 	case 0xD6: /* SUB A, imm */
@@ -1681,17 +1681,17 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xE1: /* POP HL */
-		regs->l = __gb_cpu_read(regs->sp++);
-		regs->h = __gb_cpu_read(regs->sp++);
+		SET_REG_L(__gb_cpu_read(regs->sp++))
+		SET_REG_H(__gb_cpu_read(regs->sp++))
 		break;
 
 	case 0xE2: /* LD (C), A */
-		__gb_cpu_write(0xFF00 | regs->c, regs->a);
+		__gb_cpu_write(0xFF00 | GET_REG_C(), regs->a);
 		break;
 
 	case 0xE5: /* PUSH HL */
-		__gb_cpu_write(--regs->sp, regs->h);
-		__gb_cpu_write(--regs->sp, regs->l);
+		__gb_cpu_write(--regs->sp, GET_REG_H());
+		__gb_cpu_write(--regs->sp, GET_REG_L());
 		break;
 
 	case 0xE6: /* AND imm */
@@ -1761,7 +1761,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 	}
 
 	case 0xF2: /* LD A, (C) */
-		regs->a = __gb_cpu_read(0xFF00 | regs->c);
+		regs->a = __gb_cpu_read(0xFF00 | GET_REG_C());
 		break;
 
 	case 0xF3: /* DI */
