@@ -58,7 +58,11 @@ register uint16_t $PC asm("r15");
 static inline void load_regs(struct cpu_registers_s *regs)
 {
     #if ARMASM
-    __asm__("ldm r0, {" R_A ", " R_NH ", " R_Z ", " R_CR ", " R_PC "}" );
+    __asm__(
+        "ldm %[regs], {" R_A ", " R_NH ", " R_Z ", " R_CR ", " R_PC "}"
+        :
+        : [regs] "r" (regs)
+    );
     #else
 	$A = regs->a;
     $NH = regs->nh;
@@ -75,13 +79,17 @@ static inline void load_regs(struct cpu_registers_s *regs)
 static inline void store_regs(struct cpu_registers_s *regs)
 {
     #if ARMASM
-    __asm__("stm r0, {" R_A ", " R_NH ", " R_Z ", " R_CR ", " R_PC "}" );
+    __asm__(
+        "stm %[regs], {" R_A ", " R_NH ", " R_Z ", " R_CR ", " R_PC "}"
+        :
+        : [regs] "r" (regs)
+    );
     #else
 	regs->a = $A;
-	regs->pc = $PC;
     regs->nh = $NH;
-    regs->cr = $CR;
     regs->z = $Z;
+    regs->cr = $CR;
+	regs->pc = $PC;
     #endif
     //regs->hl = $HL;
 	//regs->bc = $BC;
