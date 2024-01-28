@@ -1154,6 +1154,8 @@ void gb_reset(struct gb_s *gb)
 
 	/* Initialise CPU registers as though a DMG. */
 	gb->cpu_reg.af = 0x01B0;
+	// set f=B0 properly for .nh reg
+	gb->cpu_reg.nh = 0x10;
 	gb->cpu_reg.bc = 0x0013;
 	gb->cpu_reg.de = 0x00D8;
 	gb->cpu_reg.hl = 0x014D;
