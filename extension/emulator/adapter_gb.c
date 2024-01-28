@@ -172,7 +172,6 @@ void GKGameBoyAdapterUpdate(GKGameBoyAdapter* adapter, unsigned int dt) {
 	update_crank(adapter);
 	
 	gb_run_frame(&adapter->gb);
-	gb_run_frame(&adapter->gb);
 	
 	if(force_update) {
 		memset(adapter->gb.display.changed_rows, 1, sizeof(adapter->gb.display.changed_rows));

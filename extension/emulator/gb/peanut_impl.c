@@ -864,7 +864,51 @@ void __gb_draw_line(struct gb_s *gb)
 
 void __gb_step(struct gb_s *gb)
 {
-	uint8_t inst_cycles = __gb_step_chunked(gb);
+    /* Handle interrupts */
+	if((gb->gb_ime || gb->gb_halt) &&
+			(gb->gb_reg.IF & gb->gb_reg.IE & ANY_INTR))
+	{
+		gb->gb_halt = 0;
+
+		if(gb->gb_ime)
+		{
+			/* Disable interrupts */
+			gb->gb_ime = 0;
+
+			/* Push Program Counter */
+			__gb_write(gb, --gb->cpu_reg.sp, gb->cpu_reg.pc >> 8);
+			__gb_write(gb, --gb->cpu_reg.sp, gb->cpu_reg.pc & 0xFF);
+
+			/* Call interrupt handler if required. */
+			if(gb->gb_reg.IF & gb->gb_reg.IE & VBLANK_INTR)
+			{
+				gb->cpu_reg.pc = VBLANK_INTR_ADDR;
+				gb->gb_reg.IF ^= VBLANK_INTR;
+			}
+			else if(gb->gb_reg.IF & gb->gb_reg.IE & LCDC_INTR)
+			{
+				gb->cpu_reg.pc = LCDC_INTR_ADDR;
+				gb->gb_reg.IF ^= LCDC_INTR;
+			}
+			else if(gb->gb_reg.IF & gb->gb_reg.IE & TIMER_INTR)
+			{
+				gb->cpu_reg.pc = TIMER_INTR_ADDR;
+				gb->gb_reg.IF ^= TIMER_INTR;
+			}
+			else if(gb->gb_reg.IF & gb->gb_reg.IE & SERIAL_INTR)
+			{
+				gb->cpu_reg.pc = SERIAL_INTR_ADDR;
+				gb->gb_reg.IF ^= SERIAL_INTR;
+			}
+			else if(gb->gb_reg.IF & gb->gb_reg.IE & CONTROL_INTR)
+			{
+				gb->cpu_reg.pc = CONTROL_INTR_ADDR;
+				gb->gb_reg.IF ^= CONTROL_INTR;
+			}
+		}
+	}
+    
+	uint8_t inst_cycles = __gb_step_chunked(&gb->cpu_reg);
 	
 	/* DIV register timing */
 	gb->counter.div_count += inst_cycles;
@@ -1052,6 +1096,7 @@ void __gb_step(struct gb_s *gb)
 
 void gb_run_frame(struct gb_s *gb)
 {
+    peanut_exec_gb = gb;
 	gb->gb_frame = 0;
 	if(gb->display.changed_row_count > 0) {
 		memset(gb->display.changed_rows, 0, sizeof(gb->display.changed_rows));
@@ -1059,6 +1104,7 @@ void gb_run_frame(struct gb_s *gb)
 	gb->display.changed_row_count = 0;
 	while(!gb->gb_frame)
 		__gb_step(gb);
+    peanut_exec_gb = NULL;
 }
 
 /**
