@@ -54,7 +54,7 @@
 #endif
 
 // 1 is most accurate. Higher is faster
-#define CPU_STEP_CHUNK 1
+#define CPU_STEP_CHUNK 8
 
 /* Enable LCD drawing. On by default. May be turned off for testing purposes. */
 #ifndef ENABLE_LCD
@@ -532,6 +532,7 @@ void gb_tick_rtc(struct gb_s *gb);
 void gb_set_rtc(struct gb_s *gb, const struct tm * const time);
 
 uint8_t __gb_step_chunked(struct cpu_registers_s *regs);
+void __cpu_init(struct gb_s *gb);
 
 extern struct gb_s *peanut_exec_gb;
 void gb_run_frame(struct gb_s *gb);

@@ -1846,3 +1846,16 @@ uint8_t __gb_step_chunked(struct cpu_registers_s *regs)
 	store_regs(regs);
     return inst_cycles;
 }
+
+void __cpu_init(struct gb_s *gb)
+{
+	struct cpu_registers_s *regs = &gb->cpu_reg;
+	$A = 0x01;
+	__set_f(&gb->cpu_reg, 0xB0);
+	gb->cpu_reg.bc = 0x0013;
+	gb->cpu_reg.de = 0x00D8;
+	$HL = 0x014D;
+	gb->cpu_reg.sp = 0xFFFE;
+	$PC = 0x0100;
+	store_regs(regs);
+}

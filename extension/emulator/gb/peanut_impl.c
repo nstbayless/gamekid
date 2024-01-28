@@ -1153,13 +1153,7 @@ void gb_reset(struct gb_s *gb)
 	gb->cart_mode_select = 0;
 
 	/* Initialise CPU registers as though a DMG. */
-	gb->cpu_reg.af = 0x01B0;
-	gb->cpu_reg.bc = 0x0013;
-	gb->cpu_reg.de = 0x00D8;
-	gb->cpu_reg.hl = 0x014D;
-	gb->cpu_reg.sp = 0xFFFE;
-	/* TODO: Add BIOS support. */
-	gb->cpu_reg.pc = 0x0100;
+	__cpu_init(gb);
 
 	gb->counter.lcd_count = 0;
 	gb->counter.div_count = 0;
