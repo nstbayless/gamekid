@@ -22,11 +22,11 @@ static void __set_f(struct cpu_registers_s *regs, uint8_t v)
 
 static void __gb_add16(struct cpu_registers_s *regs, uint16_t value)
 {
-	uint_fast32_t temp = regs->hl + value;
+	uint_fast32_t temp = $HL + value;
 	SET_REGF_N(0)
-	SET_REGF_H((temp ^ regs->hl ^ value) & 0x1000 ? 1 : 0)
+	SET_REGF_H((temp ^ $HL ^ value) & 0x1000 ? 1 : 0)
 	SET_REGF_C((temp & 0xFFFF0000) ? 1 : 0)
-	regs->hl = (temp & 0x0000FFFF);
+	$HL = (temp & 0x0000FFFF);
 }
 
 static void __gb_add8(struct cpu_registers_s *regs, int carry, uint8_t value)
@@ -117,7 +117,7 @@ static uint8_t __gb_execute_cb(struct cpu_registers_s *regs)
 		break;
 
 	case 6:
-		val = __gb_cpu_read(regs->hl);
+		val = __gb_cpu_read($HL);
 		break;
 
 	/* Only values 0-7 are possible here, so we make the final case
@@ -250,7 +250,7 @@ static uint8_t __gb_execute_cb(struct cpu_registers_s *regs)
 			break;
 
 		case 6:
-			__gb_cpu_write(regs->hl, val);
+			__gb_cpu_write($HL, val);
 			break;
 
 		case 7:
@@ -503,12 +503,12 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x22: /* LDI (HL), A */
-		__gb_cpu_write(regs->hl, $A);
-		regs->hl++;
+		__gb_cpu_write($HL, $A);
+		$HL++;
 		break;
 
 	case 0x23: /* INC HL */
-		regs->hl++;
+		$HL++;
 		break;
 
 	case 0x24: /* INC H */
@@ -575,16 +575,16 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 	case 0x29: /* ADD HL, HL */
 	{
 		// TODO: optimize?
-		__gb_add16(regs, regs->hl);
+		__gb_add16(regs, $HL);
 		break;
 	}
 
 	case 0x2A: /* LD A, (HL+) */
-		$A = __gb_cpu_read(regs->hl++);
+		$A = __gb_cpu_read($HL++);
 		break;
 
 	case 0x2B: /* DEC HL */
-		regs->hl--;
+		$HL--;
 		break;
 
 	case 0x2C: /* INC L */
@@ -629,8 +629,8 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x32: /* LD (HL), A */
-		__gb_cpu_write(regs->hl, $A);
-		regs->hl--;
+		__gb_cpu_write($HL, $A);
+		$HL--;
 		break;
 
 	case 0x33: /* INC SP */
@@ -639,26 +639,26 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 
 	case 0x34: /* INC (HL) */
 	{
-		uint8_t temp = __gb_cpu_read(regs->hl) + 1;
+		uint8_t temp = __gb_cpu_read($HL) + 1;
 		SET_REGF_Z((temp == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(((temp & 0x0F) == 0x00))
-		__gb_cpu_write(regs->hl, temp);
+		__gb_cpu_write($HL, temp);
 		break;
 	}
 
 	case 0x35: /* DEC (HL) */
 	{
-		uint8_t temp = __gb_cpu_read(regs->hl) - 1;
+		uint8_t temp = __gb_cpu_read($HL) - 1;
 		SET_REGF_Z((temp == 0x00))
 		SET_REGF_N(1)
 		SET_REGF_H(((temp & 0x0F) == 0x0F))
-		__gb_cpu_write(regs->hl, temp);
+		__gb_cpu_write($HL, temp);
 		break;
 	}
 
 	case 0x36: /* LD (HL), imm */
-		__gb_cpu_write(regs->hl, __gb_cpu_read($PC++));
+		__gb_cpu_write($HL, __gb_cpu_read($PC++));
 		break;
 
 	case 0x37: /* SCF */
@@ -686,7 +686,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 	}
 
 	case 0x3A: /* LD A, (HL) */
-		$A = __gb_cpu_read(regs->hl--);
+		$A = __gb_cpu_read($HL--);
 		break;
 
 	case 0x3B: /* DEC SP */
@@ -741,7 +741,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x46: /* LD B, (HL) */
-		SET_REG_B(__gb_cpu_read(regs->hl))
+		SET_REG_B(__gb_cpu_read($HL))
 		break;
 
 	case 0x47: /* LD B, A */
@@ -772,7 +772,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x4E: /* LD C, (HL) */
-		SET_REG_C(__gb_cpu_read(regs->hl))
+		SET_REG_C(__gb_cpu_read($HL))
 		break;
 
 	case 0x4F: /* LD C, A */
@@ -803,7 +803,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x56: /* LD D, (HL) */
-		SET_REG_D(__gb_cpu_read(regs->hl))
+		SET_REG_D(__gb_cpu_read($HL))
 		break;
 
 	case 0x57: /* LD D, A */
@@ -834,7 +834,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x5E: /* LD E, (HL) */
-		SET_REG_E(__gb_cpu_read(regs->hl))
+		SET_REG_E(__gb_cpu_read($HL))
 		break;
 
 	case 0x5F: /* LD E, A */
@@ -865,7 +865,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x66: /* LD H, (HL) */
-		SET_REG_H(__gb_cpu_read(regs->hl))
+		SET_REG_H(__gb_cpu_read($HL))
 		break;
 
 	case 0x67: /* LD H, A */
@@ -896,7 +896,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x6E: /* LD L, (HL) */
-		SET_REG_L(__gb_cpu_read(regs->hl))
+		SET_REG_L(__gb_cpu_read($HL))
 		break;
 
 	case 0x6F: /* LD L, A */
@@ -904,27 +904,27 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x70: /* LD (HL), B */
-		__gb_cpu_write(regs->hl, GET_REG_B());
+		__gb_cpu_write($HL, GET_REG_B());
 		break;
 
 	case 0x71: /* LD (HL), C */
-		__gb_cpu_write(regs->hl, GET_REG_C());
+		__gb_cpu_write($HL, GET_REG_C());
 		break;
 
 	case 0x72: /* LD (HL), D */
-		__gb_cpu_write(regs->hl, GET_REG_D());
+		__gb_cpu_write($HL, GET_REG_D());
 		break;
 
 	case 0x73: /* LD (HL), E */
-		__gb_cpu_write(regs->hl, GET_REG_E());
+		__gb_cpu_write($HL, GET_REG_E());
 		break;
 
 	case 0x74: /* LD (HL), H */
-		__gb_cpu_write(regs->hl, GET_REG_H());
+		__gb_cpu_write($HL, GET_REG_H());
 		break;
 
 	case 0x75: /* LD (HL), L */
-		__gb_cpu_write(regs->hl, GET_REG_L());
+		__gb_cpu_write($HL, GET_REG_L());
 		break;
 
 	case 0x76: /* HALT */
@@ -933,7 +933,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x77: /* LD (HL), A */
-		__gb_cpu_write(regs->hl, $A);
+		__gb_cpu_write($HL, $A);
 		break;
 
 	case 0x78: /* LD A, B */
@@ -961,7 +961,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0x7E: /* LD A, (HL) */
-		$A = __gb_cpu_read(regs->hl);
+		$A = __gb_cpu_read($HL);
 		break;
 
 	case 0x7F: /* LD A, A */
@@ -1005,7 +1005,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 
 	case 0x86: /* ADD A, (HL) */
 	{
-		uint8_t val = __gb_cpu_read(regs->hl);
+		uint8_t val = __gb_cpu_read($HL);
 		__gb_add8(regs, 0, val);
 		break;
 	}
@@ -1055,7 +1055,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 
 	case 0x8E: /* ADC A, (HL) */
 	{
-		uint8_t val = __gb_cpu_read(regs->hl);
+		uint8_t val = __gb_cpu_read($HL);
 		__gb_add8(regs, 1, val);
 		break;
 	}
@@ -1105,7 +1105,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 
 	case 0x96: /* SUB (HL) */
 	{
-		uint8_t val = __gb_cpu_read(regs->hl);
+		uint8_t val = __gb_cpu_read($HL);
 		__gb_sub8(regs, 0, val);
 		break;
 	}
@@ -1156,7 +1156,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 
 	case 0x9E: /* SBC A, (HL) */
 	{
-		uint8_t val = __gb_cpu_read(regs->hl);
+		uint8_t val = __gb_cpu_read($HL);
 		__gb_sub8(regs, 1, val);
 		break;
 	}
@@ -1217,7 +1217,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xA6: /* AND B */
-		$A = $A & __gb_cpu_read(regs->hl);
+		$A = $A & __gb_cpu_read($HL);
 		SET_REGF_Z(($A == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(1)
@@ -1280,7 +1280,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xAE: /* XOR (HL) */
-		$A = $A ^ __gb_cpu_read(regs->hl);
+		$A = $A ^ __gb_cpu_read($HL);
 		SET_REGF_Z(($A == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1344,7 +1344,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 		break;
 
 	case 0xB6: /* OR (HL) */
-		$A = $A | __gb_cpu_read(regs->hl);
+		$A = $A | __gb_cpu_read($HL);
 		SET_REGF_Z(($A == 0x00))
 		SET_REGF_N(0)
 		SET_REGF_H(0)
@@ -1397,7 +1397,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 	/* TODO: Optimsation by combining similar opcode routines. */
 	case 0xBE: /* CP (HL) */
 	{
-		uint8_t val = __gb_cpu_read(regs->hl);
+		uint8_t val = __gb_cpu_read($HL);
 		__gb_cmp8(regs, 0, val);
 		break;
 	}
@@ -1722,7 +1722,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 	}
 
 	case 0xE9: /* JP (HL) */
-		$PC = regs->hl;
+		$PC = $HL;
 		break;
 
 	case 0xEA: /* LD (imm), A */
@@ -1791,7 +1791,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 	{
 		/* Taken from SameBoy, which is released under MIT Licence. */
 		int8_t offset = (int8_t) __gb_cpu_read($PC++);
-		regs->hl = regs->sp + offset;
+		$HL = regs->sp + offset;
 		SET_REGF_Z(0)
 		SET_REGF_N(0)
 		SET_REGF_H(((regs->sp & 0xF) + (offset & 0xF) > 0xF) ? 1 : 0)
@@ -1800,7 +1800,7 @@ static uint8_t __gb_step_cpu(struct cpu_registers_s *regs)
 	}
 
 	case 0xF9: /* LD SP, HL */
-		regs->sp = regs->hl;
+		regs->sp = $HL;
 		break;
 
 	case 0xFA: /* LD A, (imm) */
