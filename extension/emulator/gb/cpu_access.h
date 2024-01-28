@@ -5,6 +5,11 @@ static uint32_t $NH;
 static uint32_t $CR;
 static uint16_t $PC;
 #elif defined(__arm__)
+#define R_A "r5"
+#define R_NH "r6"
+#define R_Z "r7"
+#define R_CR "r8"
+#define R_PC "r9"
 register uint8_t  $A  asm("r5");
 register uint32_t $NH asm("r6");
 register uint32_t $Z  asm("r7");
@@ -52,23 +57,33 @@ register uint16_t $PC asm("r15");
 
 static inline void load_regs(struct cpu_registers_s *regs)
 {
+    #if ARMASM
+    __asm__("ldm r0, {" R_A ", " R_NH ", " R_Z ", " R_CR ", " R_PC "}" );
+    #else
 	$A = regs->a;
-	$PC = regs->pc;
-    $Z = regs->f_bits.z;
     $NH = regs->nh;
-    $CR = regs->f_bits.c;
+    $Z = regs->z;
+    $CR = regs->cr;
+	$PC = regs->pc;
+    #endif
+    //$HL = regs->hl;
 	//$BC = regs->bc;
 	//$DE = regs->de;
-	//$SP = regs->sp;
+	//$SP = regs->sp
 }
 
 static inline void store_regs(struct cpu_registers_s *regs)
 {
+    #if ARMASM
+    __asm__("stm r0, {" R_A ", " R_NH ", " R_Z ", " R_CR ", " R_PC "}" );
+    #else
 	regs->a = $A;
 	regs->pc = $PC;
     regs->nh = $NH;
-    regs->f_bits.c = $CR;
-    regs->f_bits.z = $Z;
+    regs->cr = $CR;
+    regs->z = $Z;
+    #endif
+    //regs->hl = $HL;
 	//regs->bc = $BC;
 	//regs->de = $DE;
 	//regs->sp = $SP;

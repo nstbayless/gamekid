@@ -1153,9 +1153,10 @@ void gb_reset(struct gb_s *gb)
 	gb->cart_mode_select = 0;
 
 	/* Initialise CPU registers as though a DMG. */
-	gb->cpu_reg.af = 0x01B0;
-	// set f=B0 properly for .nh reg
+	gb->cpu_reg.a = 0x01;
 	gb->cpu_reg.nh = 0x10;
+	gb->cpu_reg.z = 1;
+	gb->cpu_reg.cr = 0;
 	gb->cpu_reg.bc = 0x0013;
 	gb->cpu_reg.de = 0x00D8;
 	gb->cpu_reg.hl = 0x014D;

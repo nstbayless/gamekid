@@ -38,6 +38,12 @@
 #define PEANUT_GB_HIGH_LCD_ACCURACY 0
 #include "emulator/gb/minigb_apu.h"
 
+#ifdef __arm__
+	#define ARMASM 1
+#else
+	#define ARMASM 0
+#endif
+
 #include "version.all"	/* Version information */
 #include <stdlib.h>	/* Required for qsort */
 #include <stdint.h>	/* Required for int types */
@@ -178,29 +184,28 @@
 
 struct cpu_registers_s
 {
-	/* Combine A and F registers. */
 	union
 	{
-		struct
-		{
-			/* Define specific bits of Flag register. */
-			union
-			{
-				struct
-				{
-					unsigned unused : 4;
-					unsigned c : 1; /* Carry flag. */
-					unsigned h : 1; /* Half carry flag. */
-					unsigned n : 1; /* Add/sub flag. */
-					unsigned z : 1; /* Zero flag. */
-				} f_bits;
-				uint8_t f;
-			};
-			uint8_t a;
-		};
-		uint16_t af;
+		uint8_t a;
+		uint32_t a32;
 	};
-
+	
+	uint32_t nh;
+	uint32_t z;
+	uint32_t cr;
+	
+	union
+	{
+		uint16_t pc; /* Program counter */
+		uint32_t pc32;
+	};
+	
+	union
+	{
+		uint16_t sp; /* Stack pointer */
+		uint32_t sp32;
+	};
+	
 	union
 	{
 		struct
@@ -209,6 +214,7 @@ struct cpu_registers_s
 			uint8_t b;
 		};
 		uint16_t bc;
+		uint32_t bc32;
 	};
 
 	union
@@ -219,6 +225,7 @@ struct cpu_registers_s
 			uint8_t d;
 		};
 		uint16_t de;
+		uint32_t de32;
 	};
 
 	union
@@ -229,11 +236,8 @@ struct cpu_registers_s
 			uint8_t h;
 		};
 		uint16_t hl;
+		uint32_t hl32;
 	};
-
-	uint16_t sp; /* Stack pointer */
-	uint16_t pc; /* Program counter */
-	uint32_t nh;
 };
 
 struct count_s
