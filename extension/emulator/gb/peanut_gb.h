@@ -233,6 +233,7 @@ struct cpu_registers_s
 
 	uint16_t sp; /* Stack pointer */
 	uint16_t pc; /* Program counter */
+	uint32_t nh;
 };
 
 struct count_s
