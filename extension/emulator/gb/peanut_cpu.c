@@ -1,5 +1,44 @@
 #include "peanut_gb.h"
 
+static void __gb_add16(struct gb_s *gb, uint16_t value)
+{
+	uint_fast32_t temp = gb->cpu_reg.hl + value;
+	gb->cpu_reg.f_bits.n = 0;
+	gb->cpu_reg.f_bits.h =
+		(temp ^ gb->cpu_reg.hl ^ value) & 0x1000 ? 1 : 0;
+	gb->cpu_reg.f_bits.c = (temp & 0xFFFF0000) ? 1 : 0;
+	gb->cpu_reg.hl = (temp & 0x0000FFFF);
+}
+
+static void __gb_add8(struct gb_s *gb, int carry, uint8_t value)
+{
+	uint8_t c = carry ? gb->cpu_reg.f_bits.c : 0;
+	uint16_t temp = gb->cpu_reg.a + value + c;
+	gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
+	gb->cpu_reg.f_bits.n = 0;
+	gb->cpu_reg.f_bits.h =
+		(gb->cpu_reg.a ^ value ^ temp) & 0x10 ? 1 : 0;
+	gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
+	gb->cpu_reg.a = (temp & 0xFF);
+}
+
+static inline uint8_t __gb_cmp8(struct gb_s *gb, int carry, uint8_t value)
+{
+	uint8_t c = carry ? gb->cpu_reg.f_bits.c : 0;
+	uint16_t temp = gb->cpu_reg.a - value - c;
+	gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
+	gb->cpu_reg.f_bits.n = 1;
+	gb->cpu_reg.f_bits.h =
+		(gb->cpu_reg.a ^ value ^ temp) & 0x10 ? 1 : 0;
+	gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
+	return (temp & 0xFF);
+}
+
+static void __gb_sub8(struct gb_s *gb, int carry, uint8_t value)
+{
+	gb->cpu_reg.a = __gb_cmp8(gb, carry, value);
+}
+
 static uint8_t __gb_execute_cb(struct gb_s *gb)
 {
 	uint8_t inst_cycles;
@@ -329,12 +368,7 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 
 	case 0x09: /* ADD HL, BC */
 	{
-		uint_fast32_t temp = gb->cpu_reg.hl + gb->cpu_reg.bc;
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(temp ^ gb->cpu_reg.hl ^ gb->cpu_reg.bc) & 0x1000 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFFFF0000) ? 1 : 0;
-		gb->cpu_reg.hl = (temp & 0x0000FFFF);
+		__gb_add16(gb, gb->cpu_reg.bc);
 		break;
 	}
 
@@ -427,12 +461,7 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 
 	case 0x19: /* ADD HL, DE */
 	{
-		uint_fast32_t temp = gb->cpu_reg.hl + gb->cpu_reg.de;
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(temp ^ gb->cpu_reg.hl ^ gb->cpu_reg.de) & 0x1000 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFFFF0000) ? 1 : 0;
-		gb->cpu_reg.hl = (temp & 0x0000FFFF);
+		__gb_add16(gb, gb->cpu_reg.de);
 		break;
 	}
 
@@ -562,11 +591,8 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 
 	case 0x29: /* ADD HL, HL */
 	{
-		uint_fast32_t temp = gb->cpu_reg.hl + gb->cpu_reg.hl;
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h = (temp & 0x1000) ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFFFF0000) ? 1 : 0;
-		gb->cpu_reg.hl = (temp & 0x0000FFFF);
+		// TODO: optimize?
+		__gb_add16(gb, gb->cpu_reg.hl);
 		break;
 	}
 
@@ -672,12 +698,7 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 
 	case 0x39: /* ADD HL, SP */
 	{
-		uint_fast32_t temp = gb->cpu_reg.hl + gb->cpu_reg.sp;
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			((gb->cpu_reg.hl & 0xFFF) + (gb->cpu_reg.sp & 0xFFF)) & 0x1000 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = temp & 0x10000 ? 1 : 0;
-		gb->cpu_reg.hl = (uint16_t)temp;
+		__gb_add16(gb, gb->cpu_reg.sp);
 		break;
 	}
 
@@ -965,280 +986,144 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 
 	case 0x80: /* ADD A, B */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.b;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.b ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 0, gb->cpu_reg.b);
 		break;
 	}
 
 	case 0x81: /* ADD A, C */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.c ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 0, gb->cpu_reg.c);
 		break;
 	}
 
 	case 0x82: /* ADD A, D */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.d;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.d ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 0, gb->cpu_reg.d);
 		break;
 	}
 
 	case 0x83: /* ADD A, E */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.e;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.e ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 0, gb->cpu_reg.e);
 		break;
 	}
 
 	case 0x84: /* ADD A, H */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.h;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.h ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 0, gb->cpu_reg.h);
 		break;
 	}
 
 	case 0x85: /* ADD A, L */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.l;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.l ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 0, gb->cpu_reg.l);
 		break;
 	}
 
 	case 0x86: /* ADD A, (HL) */
 	{
-		uint8_t hl = __gb_read(gb, gb->cpu_reg.hl);
-		uint16_t temp = gb->cpu_reg.a + hl;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ hl ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		uint8_t val = __gb_read(gb, gb->cpu_reg.hl);
+		__gb_add8(gb, 0, val);
 		break;
 	}
 
 	case 0x87: /* ADD A, A */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.a;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h = temp & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		// TODO: optimize?
+		__gb_add8(gb, 0, gb->cpu_reg.a);
 		break;
 	}
 
 	case 0x88: /* ADC A, B */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.b + gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.b ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 1, gb->cpu_reg.b);
 		break;
 	}
 
 	case 0x89: /* ADC A, C */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.c + gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.c ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 1, gb->cpu_reg.c);
 		break;
 	}
 
 	case 0x8A: /* ADC A, D */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.d + gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.d ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 1, gb->cpu_reg.d);
 		break;
 	}
 
 	case 0x8B: /* ADC A, E */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.e + gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.e ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 1, gb->cpu_reg.e);
 		break;
 	}
 
 	case 0x8C: /* ADC A, H */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.h + gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.h ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 1, gb->cpu_reg.h);
 		break;
 	}
 
 	case 0x8D: /* ADC A, L */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.l + gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.l ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 1, gb->cpu_reg.l);
 		break;
 	}
 
 	case 0x8E: /* ADC A, (HL) */
 	{
 		uint8_t val = __gb_read(gb, gb->cpu_reg.hl);
-		uint16_t temp = gb->cpu_reg.a + val + gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ val ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_add8(gb, 1, val);
 		break;
 	}
 
 	case 0x8F: /* ADC A, A */
 	{
-		uint16_t temp = gb->cpu_reg.a + gb->cpu_reg.a + gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 0;
-		/* TODO: Optimisation here? */
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.a ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		// TODO: optimize?
+		__gb_add8(gb, 1, gb->cpu_reg.a);
 		break;
 	}
 
 	case 0x90: /* SUB B */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.b;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.b ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 0, gb->cpu_reg.b);
 		break;
 	}
 
 	case 0x91: /* SUB C */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.c ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 0, gb->cpu_reg.c);
 		break;
 	}
 
 	case 0x92: /* SUB D */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.d;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.d ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 0, gb->cpu_reg.d);
 		break;
 	}
 
 	case 0x93: /* SUB E */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.e;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.e ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 0, gb->cpu_reg.e);
 		break;
 	}
 
 	case 0x94: /* SUB H */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.h;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.h ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 0, gb->cpu_reg.h);
 		break;
 	}
 
 	case 0x95: /* SUB L */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.l;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.l ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 0, gb->cpu_reg.l);
 		break;
 	}
 
 	case 0x96: /* SUB (HL) */
 	{
 		uint8_t val = __gb_read(gb, gb->cpu_reg.hl);
-		uint16_t temp = gb->cpu_reg.a - val;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ val ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 0, val);
 		break;
 	}
 
@@ -1252,86 +1137,44 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 
 	case 0x98: /* SBC A, B */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.b - gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.b ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 1, gb->cpu_reg.b);
 		break;
 	}
 
 	case 0x99: /* SBC A, C */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.c - gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.c ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 1, gb->cpu_reg.c);
 		break;
 	}
 
 	case 0x9A: /* SBC A, D */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.d - gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.d ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 1, gb->cpu_reg.d);
 		break;
 	}
 
 	case 0x9B: /* SBC A, E */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.e - gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.e ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 1, gb->cpu_reg.e);
 		break;
 	}
 
 	case 0x9C: /* SBC A, H */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.h - gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.h ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 1, gb->cpu_reg.h);
 		break;
 	}
 
 	case 0x9D: /* SBC A, L */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.l - gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.l ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 1, gb->cpu_reg.l);
 		break;
 	}
 
 	case 0x9E: /* SBC A, (HL) */
 	{
 		uint8_t val = __gb_read(gb, gb->cpu_reg.hl);
-		uint16_t temp = gb->cpu_reg.a - val - gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ val ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		__gb_sub8(gb, 1, val);
 		break;
 	}
 
@@ -1534,80 +1377,45 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 
 	case 0xB8: /* CP B */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.b;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.b ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
+		__gb_cmp8(gb, 0, gb->cpu_reg.b);
 		break;
 	}
 
 	case 0xB9: /* CP C */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.c;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.c ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
+		__gb_cmp8(gb, 0, gb->cpu_reg.c);
 		break;
 	}
 
 	case 0xBA: /* CP D */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.d;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.d ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
+		__gb_cmp8(gb, 0, gb->cpu_reg.d);
 		break;
 	}
 
 	case 0xBB: /* CP E */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.e;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.e ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
+		__gb_cmp8(gb, 0, gb->cpu_reg.e);
 		break;
 	}
 
 	case 0xBC: /* CP H */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.h;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.h ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
+		__gb_cmp8(gb, 0, gb->cpu_reg.h);
 		break;
 	}
 
 	case 0xBD: /* CP L */
 	{
-		uint16_t temp = gb->cpu_reg.a - gb->cpu_reg.l;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ gb->cpu_reg.l ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
+		__gb_cmp8(gb, 0, gb->cpu_reg.l);
 		break;
 	}
 
 	/* TODO: Optimsation by combining similar opcode routines. */
-	case 0xBE: /* CP B */
+	case 0xBE: /* CP (HL) */
 	{
 		uint8_t val = __gb_read(gb, gb->cpu_reg.hl);
-		uint16_t temp = gb->cpu_reg.a - val;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ val ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
+		__gb_cmp8(gb, 0, val);
 		break;
 	}
 
@@ -1676,15 +1484,8 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 
 	case 0xC6: /* ADD A, imm */
 	{
-		/* Taken from SameBoy, which is released under MIT Licence. */
 		uint8_t value = __gb_read(gb, gb->cpu_reg.pc++);
-		uint16_t calc = gb->cpu_reg.a + value;
-		gb->cpu_reg.f_bits.z = ((uint8_t)calc == 0) ? 1 : 0;
-		gb->cpu_reg.f_bits.h =
-			((gb->cpu_reg.a & 0xF) + (value & 0xF) > 0x0F) ? 1 : 0;
-		gb->cpu_reg.f_bits.c = calc > 0xFF ? 1 : 0;
-		gb->cpu_reg.f_bits.n = 0;
-		gb->cpu_reg.a = (uint8_t)calc;
+		__gb_add8(gb, 0, value);
 		break;
 	}
 
@@ -1757,18 +1558,8 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 
 	case 0xCE: /* ADC A, imm */
 	{
-		uint8_t value, a, carry;
-		value = __gb_read(gb, gb->cpu_reg.pc++);
-		a = gb->cpu_reg.a;
-		carry = gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.a = a + value + carry;
-
-		gb->cpu_reg.f_bits.z = gb->cpu_reg.a == 0 ? 1 : 0;
-		gb->cpu_reg.f_bits.h =
-			((a & 0xF) + (value & 0xF) + carry > 0x0F) ? 1 : 0;
-		gb->cpu_reg.f_bits.c =
-			(((uint16_t) a) + ((uint16_t) value) + carry > 0xFF) ? 1 : 0;
-		gb->cpu_reg.f_bits.n = 0;
+		uint8_t value = __gb_read(gb, gb->cpu_reg.pc++);
+		__gb_add8(gb, 1, value);
 		break;
 	}
 
@@ -1827,16 +1618,10 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 		__gb_write(gb, --gb->cpu_reg.sp, gb->cpu_reg.e);
 		break;
 
-	case 0xD6: /* SUB imm */
+	case 0xD6: /* SUB A, imm */
 	{
-		uint8_t val = __gb_read(gb, gb->cpu_reg.pc++);
-		uint16_t temp = gb->cpu_reg.a - val;
-		gb->cpu_reg.f_bits.z = ((temp & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ val ^ temp) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp & 0xFF);
+		uint8_t value = __gb_read(gb, gb->cpu_reg.pc++);
+		__gb_sub8(gb, 0, value);
 		break;
 	}
 
@@ -1896,14 +1681,8 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 
 	case 0xDE: /* SBC A, imm */
 	{
-		uint8_t temp_8 = __gb_read(gb, gb->cpu_reg.pc++);
-		uint16_t temp_16 = gb->cpu_reg.a - temp_8 - gb->cpu_reg.f_bits.c;
-		gb->cpu_reg.f_bits.z = ((temp_16 & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h =
-			(gb->cpu_reg.a ^ temp_8 ^ temp_16) & 0x10 ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp_16 & 0xFF00) ? 1 : 0;
-		gb->cpu_reg.a = (temp_16 & 0xFF);
+		uint8_t value = __gb_read(gb, gb->cpu_reg.pc++);
+		__gb_sub8(gb, 1, value);
 		break;
 	}
 
@@ -2061,12 +1840,8 @@ static uint8_t __gb_step_cpu(struct gb_s *gb)
 
 	case 0xFE: /* CP imm */
 	{
-		uint8_t temp_8 = __gb_read(gb, gb->cpu_reg.pc++);
-		uint16_t temp_16 = gb->cpu_reg.a - temp_8;
-		gb->cpu_reg.f_bits.z = ((temp_16 & 0xFF) == 0x00);
-		gb->cpu_reg.f_bits.n = 1;
-		gb->cpu_reg.f_bits.h = ((gb->cpu_reg.a ^ temp_8 ^ temp_16) & 0x10) ? 1 : 0;
-		gb->cpu_reg.f_bits.c = (temp_16 & 0xFF00) ? 1 : 0;
+		uint8_t value = __gb_read(gb, gb->cpu_reg.pc++);
+		__gb_cmp8(gb, 0, value);
 		break;
 	}
 
